@@ -3,22 +3,27 @@
 This README would normally document whatever steps are necessary to get the
 application up and running.
 
-Things you may want to cover:
+## Ruby version
 
-* Ruby version
+The application requires Ruby version 3.0.0 or higher.
 
-* System dependencies
+## System dependencies
 
-* Configuration
+The application depends on the following system libraries and tools:
 
-* Database creation
+- PostgreSQL database
+- Node.js runtime environment
+- Yarn package manager
+- ImageMagick for image processing
 
-* Database initialization
+## Configuration
 
-* How to run the test suite
+The application requires the following configuration files:
 
-* Services (job queues, cache servers, search engines, etc.)
+- `.env` file for environment variables
+- `config/database.yml` for database connection settings
+- `config/application.yml` for application-specific settings
 
-* Deployment instructions
+## Database creation
 
-* ...
+To create the database, run the following command:
