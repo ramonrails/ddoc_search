@@ -23,7 +23,7 @@ gem "redis-namespace", "~> 1.11"
 gem "connection_pool", "~> 2.4"
 
 # Background Jobs
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.0"
 gem "karafka", "~> 2.4"
 
 # API & Serialization
