@@ -125,10 +125,12 @@ class Document < ApplicationRecord
       CircuitBreaker.call(:elasticsearch) do
         __elasticsearch__.search(search_definition)
       end
-  rescue Elasticsearch::Transport::Transport::Errors::ServiceUnavailable
-      # Falls back to SQL-based LIKE search when Elasticsearch is unavailable.
+    end
+  rescue StandardError => e
+    # Falls back to SQL-based LIKE search when Elasticsearch is unavailable.
+    Rails.logger.warn("Elasticsearch search failed, falling back to SQL: #{e.message}")
     where(tenant_id: tenant_id)
-      .where("title ILIKE ? OR content ILIKE ?", "%#{query}%", "%#{query}%")
+      .where("title LIKE ? OR content LIKE ?", "%#{query}%", "%#{query}%")
       .page(page)
       .per(per_page)
   end

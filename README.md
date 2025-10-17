@@ -2,6 +2,101 @@
 
 A high-performance, multi-tenant document search API built with Ruby on Rails. This application provides full-text search capabilities powered by Elasticsearch, with support for tenant isolation, rate limiting, caching, and asynchronous document indexing via Kafka.
 
+## Quick Start
+
+### Running Locally
+
+1. **Install dependencies**
+   ```bash
+   bundle install
+   ```
+
+2. **Start required services** (Elasticsearch, Redis, Kafka)
+   ```bash
+   docker compose -f docker-compose.dev.yml up -d
+   ```
+
+3. **Setup database and Elasticsearch**
+   ```bash
+   rails db:drop db:create db:migrate
+   rails runner "Document.__elasticsearch__.create_index! force: true"
+   ```
+
+4. **Create a test tenant**
+   ```bash
+   rails runner tmp/create_tenant.rb
+   # Save the API key from the output!
+   ```
+
+5. **Start Rails server**
+
+   ```bash
+   rails server -p 3000
+   ```
+
+6. **Test the API** - Use the provided `test_api.sh` script with real test files:
+
+   ```bash
+   chmod +x test_api.sh
+   ./test_api.sh
+   ```
+
+### Ready-to-Use curl Commands
+
+```bash
+export TEST_API_KEY="df1a5764855153924486beaae96cebef739f3f54f68e28ebdf0338aea5155ee5"
+```
+
+**Health Check:**
+
+```bash
+curl http://localhost:3000/health | jq '.'
+```
+
+**Create Document from test/fixtures/files/car.txt:**
+
+```bash
+curl -X POST http://localhost:3000/v1/documents \
+  -H "X-API-Key: $TEST_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document": {
+      "title": "The Mysterious Garage - Classic Cars Story",
+      "content": "'"$(cat test/fixtures/files/car.txt | tr '\n' ' ' | sed 's/"/\\"/g')"'",
+      "metadata": {"category": "story", "tags": ["cars", "nostalgia"]}
+    }
+  }' | jq '.'
+```
+
+**Retrieve Document:**
+
+```bash
+curl http://localhost:3000/v1/documents/1 \
+  -H "X-API-Key: $TEST_API_KEY" | jq '.'
+```
+
+**Search Documents:**
+
+```bash
+curl "http://localhost:3000/v1/search?q=car&page=1&per_page=10" \
+  -H "X-API-Key: $TEST_API_KEY" | jq '.'
+```
+
+**Delete Document:**
+
+```bash
+curl -X DELETE http://localhost:3000/v1/documents/1 \
+  -H "X-API-Key: $TEST_API_KEY" | jq '.'
+```
+
+### Test Files Available
+
+The project includes three test files in `test/fixtures/files/` that you can use to test the API:
+
+- **car.txt** - A story about classic cars and a mysterious garage
+- **earth.txt** - A poetic description of Earth and nature
+- **environment.txt** - An article about environmental impact of cars
+
 ## Overview
 
 DDoc Search is designed to handle document storage and search for multiple tenants with the following key features:

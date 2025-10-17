@@ -62,7 +62,7 @@ class HealthController < ApplicationController
     start = Time.current  # Record the current time for latency calculation.
 
     # Send a simple ping command to test Redis connectivity and response time.
-    Redis.current.ping
+    REDIS_POOL.ping
     { status: "up", latency_ms: ((Time.current - start) * 1000).round(2) }  # Successful execution, record latency.
   rescue => e
     # Handle any errors during Redis connection or query execution.

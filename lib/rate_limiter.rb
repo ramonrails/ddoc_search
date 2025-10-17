@@ -16,11 +16,11 @@ class RateLimiter
     key = "rate_limit:#{tenant_id}:#{current_window}"
 
     # Atomically increment the counter and return the new value
-    count = Redis.current.incr(key)
+    count = REDIS_POOL.incr(key)
 
     # Set expiration time to twice the window size (120 seconds) when this is the first request
     # This ensures the key doesn't persist indefinitely if no further requests come in
-    Redis.current.expire(key, WINDOW_SIZE * 2) if count == 1
+    REDIS_POOL.expire(key, WINDOW_SIZE * 2) if count == 1
 
     count
   end
@@ -32,8 +32,8 @@ class RateLimiter
     pattern = "rate_limit:#{tenant_id}:*"
 
     # Scan through Redis keys matching the pattern and delete them all
-    Redis.current.scan_each(match: pattern) do |key|
-      Redis.current.del(key)
+    REDIS_POOL.scan_each(match: pattern) do |key|
+      REDIS_POOL.del(key)
     end
   end
 

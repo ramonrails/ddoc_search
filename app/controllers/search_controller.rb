@@ -28,18 +28,28 @@ class SearchController < ApplicationController
     # Calculates the elapsed time since the search began in milliseconds.
     took_ms = ((Time.current - start_time) * 1000).round
 
-    # Queues a job to update the search analytics for the tenant based on the results of this search.
-    SearchAnalyticsJob.perform_async(@current_tenant.id, query, results.total, took_ms)
+    # Handle both Elasticsearch and SQL results
+    if results.respond_to?(:total)
+      # Elasticsearch results
+      total = results.total
+      documents = results.records
+      SearchAnalyticsJob.perform_later(@current_tenant.id, query, total, took_ms)
+    else
+      # SQL fallback results (ActiveRecord::Relation)
+      total = results.count
+      documents = results
+      SearchAnalyticsJob.perform_later(@current_tenant.id, query, total, took_ms)
+    end
 
     # Renders a JSON response containing the search results, including the total number of documents matched,
     # the current page and per-page limit, and an array of formatted search result objects.
     render json: {
       query: query,
-      total: results.total,
+      total: total,
       page: page,
       per_page: per_page,
       took_ms: took_ms,
-      results: results.records.map { |doc| format_search_result(doc, results) }
+      results: documents.map { |doc| format_search_result(doc, results) }
     }
   rescue => e
     # Logs any exceptions that occur during the search operation.
@@ -56,11 +66,22 @@ class SearchController < ApplicationController
   private
 
   def format_search_result(document, search_results)
-    # Retrieves the highlighted content for the matched document from the Elasticsearch response.
-    highlight = search_results.response.dig("hits", "hits")
-                  .find { |h| h["_id"] == document.id.to_s }
-                  &.dig("highlight", "content")
-                  &.first
+    # Handle both Elasticsearch and SQL results
+    if search_results.respond_to?(:response)
+      # Elasticsearch results - with highlighting and scores
+      highlight = search_results.response.dig("hits", "hits")
+                    .find { |h| h["_id"] == document.id.to_s }
+                    &.dig("highlight", "content")
+                    &.first
+
+      score = search_results.response.dig("hits", "hits")
+                .find { |h| h["_id"] == document.id.to_s }
+                &.dig("_score")
+    else
+      # SQL fallback - no highlighting or scores
+      highlight = nil
+      score = nil
+    end
 
     # Formats a search result object with the ID, title, snippet (either highlighted content or truncated original content),
     # score, and created at time of the matched document.
@@ -68,9 +89,7 @@ class SearchController < ApplicationController
       id: document.id,
       title: document.title,
       snippet: highlight || document.content.truncate(200),
-      score: search_results.response.dig("hits", "hits")
-               .find { |h| h["_id"] == document.id.to_s }
-               &.dig("_score"),
+      score: score,
       created_at: document.created_at
     }
   end

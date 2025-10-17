@@ -75,9 +75,9 @@ class DocumentsController < ApplicationController
   def invalidate_search_cache(tenant_id)
     # Invalidate all cached search results for the specified tenant. This is typically done after deleting a document.
     pattern = "doc_search:search:#{tenant_id}:*"
-    Redis.current.scan_each(match: pattern) do |key|
+    REDIS_POOL.scan_each(match: pattern) do |key|
       # Remove each matching cache key from memory to ensure data consistency.
-      Redis.current.del(key)
+      REDIS_POOL.del(key)
     end
   end
 end

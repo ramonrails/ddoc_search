@@ -7,10 +7,5 @@ Elasticsearch::Model.client = Elasticsearch::Client.new(
   request_timeout: 5
 )
 
-unless Rails.env.test?
-  begin
-    Document.__elasticsearch__.create_index! force: true if Rails.env.development?
-  rescue Elasticsearch::Transport::Transport::Errors::BadRequest => e
-    Rails.logger.info("Elasticsearch index already exists")
-  end
-end
+# Index creation is handled separately after models are loaded
+# Run: rails runner 'Document.__elasticsearch__.create_index! force: true'

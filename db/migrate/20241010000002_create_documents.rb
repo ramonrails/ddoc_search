@@ -10,7 +10,12 @@ class CreateDocuments < ActiveRecord::Migration[8.0]
       t.text :content, null: false
       t.string :content_hash, limit: 64
       t.bigint :file_size
-      t.jsonb :metadata, default: {}
+      # Use json for SQLite compatibility, jsonb for PostgreSQL
+      if ActiveRecord::Base.connection.adapter_name == 'PostgreSQL'
+        t.jsonb :metadata, default: {}
+      else
+        t.json :metadata
+      end
       t.datetime :indexed_at
 
       t.timestamps

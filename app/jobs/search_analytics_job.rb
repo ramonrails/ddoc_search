@@ -1,5 +1,4 @@
-# Enable frozen string literals to improve performance and security.
-frozen_string_literal: true
+# frozen_string_literal: true
 
 # Define a class called SearchAnalyticsJob that inherits from ApplicationJob.
 class SearchAnalyticsJob < ApplicationJob

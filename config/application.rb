@@ -41,6 +41,8 @@ module DdocSearch
     config.active_job.queue_adapter = :sidekiq
 
     # Middleware for multi-tenancy
+    # Load middleware explicitly since it's in app/middleware
+    require_relative "../app/middleware/tenant_middleware"
     config.middleware.use TenantMiddleware
 
     # Rate limiting with Rack::Attack

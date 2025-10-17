@@ -14,7 +14,7 @@ class TenantMiddleware
   # It's responsible for extracting the tenant from the API key and setting it in the Current context.
   def call(env)
     # Extracts the API key from the HTTP request headers.
-    api_key = env["HTTP_X_TENANT_API_KEY"]
+    api_key = env["HTTP_X_API_KEY"] || env["HTTP_X_TENANT_API_KEY"]
 
     # Skip authentication for health check
     if env["PATH_INFO"] == "/health" # Check if the current path is the health check endpoint.
