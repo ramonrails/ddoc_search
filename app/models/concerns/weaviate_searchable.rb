@@ -18,45 +18,23 @@ module WeaviateSearchable
       "Document_#{Rails.env}"
     end
 
+    # Loads the Weaviate schema from JSON file and replaces environment placeholder
+    def load_weaviate_schema
+      schema_path = Rails.root.join("db", "weaviate_schema.json")
+      schema_json = File.read(schema_path)
+      schema = JSON.parse(schema_json)
+
+      # Replace the {env} placeholder with the actual Rails environment
+      schema["class"] = schema["class"].gsub("{env}", Rails.env)
+
+      schema
+    end
+
     # Ensures Weaviate schema exists for the Document class
     def ensure_weaviate_schema!
       return if schema_exists?
 
-      schema = {
-        class: weaviate_class_name,
-        description: "Documents for multi-tenant search",
-        vectorizer: "none",
-        properties: [
-          {
-            name: "tenant_id",
-            dataType: ["int"],
-            description: "Tenant identifier for multi-tenancy"
-          },
-          {
-            name: "title",
-            dataType: ["text"],
-            description: "Document title",
-            tokenization: "word"
-          },
-          {
-            name: "content",
-            dataType: ["text"],
-            description: "Document content",
-            tokenization: "word"
-          },
-          {
-            name: "created_at",
-            dataType: ["date"],
-            description: "Document creation timestamp"
-          },
-          {
-            name: "metadata",
-            dataType: ["object"],
-            description: "Additional metadata"
-          }
-        ]
-      }
-
+      schema = load_weaviate_schema
       WEAVIATE_CLIENT.schema.create(schema)
     rescue StandardError => e
       Rails.logger.error("Failed to create Weaviate schema: #{e.message}")
