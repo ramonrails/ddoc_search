@@ -16,8 +16,7 @@ gem "puma", ">= 5.0"
 gem "bcrypt", "~> 3.1.7"
 
 # Search & Caching
-gem "elasticsearch-rails", "~> 8.0"
-gem "elasticsearch-model", "~> 8.0"
+gem "faraday", "~> 2.0" # For Weaviate HTTP client
 gem "redis", "~> 5.0"
 gem "redis-namespace", "~> 1.11"
 gem "connection_pool", "~> 2.4"

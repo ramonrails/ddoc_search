@@ -1,28 +1,32 @@
 # DDoc Search
 
-A high-performance, multi-tenant document search API built with Ruby on Rails. This application provides full-text search capabilities powered by Elasticsearch, with support for tenant isolation, rate limiting, caching, and asynchronous document indexing via Kafka.
+A high-performance, multi-tenant document search API built with Ruby on Rails. This application provides full-text search capabilities powered by Weaviate, with support for tenant isolation, rate limiting, caching, and asynchronous document indexing via Kafka.
 
 ## Quick Start
 
 ### Running Locally
 
 1. **Install dependencies**
+
    ```bash
    bundle install
    ```
 
-2. **Start required services** (Elasticsearch, Redis, Kafka)
+2. **Start required services** (Weaviate, Redis, Kafka)
+
    ```bash
    docker compose -f docker-compose.dev.yml up -d
    ```
 
-3. **Setup database and Elasticsearch**
+3. **Setup database and Weaviate**
+
    ```bash
    rails db:drop db:create db:migrate
-   rails runner "Document.__elasticsearch__.create_index! force: true"
+   rails runner "Document.ensure_weaviate_schema!"
    ```
 
 4. **Create a test tenant**
+
    ```bash
    rails runner tmp/create_tenant.rb
    # Save the API key from the output!
@@ -43,9 +47,7 @@ A high-performance, multi-tenant document search API built with Ruby on Rails. T
 
 ### Ready-to-Use curl Commands
 
-```bash
-export TEST_API_KEY="df1a5764855153924486beaae96cebef739f3f54f68e28ebdf0338aea5155ee5"
-```
+Using test API key: `aead1b358e37d400e37bd9f6d031fe3a0fab53f6f6e3839b494740b7373658fe`
 
 **Health Check:**
 
@@ -57,7 +59,7 @@ curl http://localhost:3000/health | jq '.'
 
 ```bash
 curl -X POST http://localhost:3000/v1/documents \
-  -H "X-API-Key: $TEST_API_KEY" \
+  -H "X-API-Key: aead1b358e37d400e37bd9f6d031fe3a0fab53f6f6e3839b494740b7373658fe" \
   -H "Content-Type: application/json" \
   -d '{
     "document": {
@@ -68,25 +70,38 @@ curl -X POST http://localhost:3000/v1/documents \
   }' | jq '.'
 ```
 
+```bash
+curl -X POST http://localhost:3000/v1/documents \
+  -H "X-API-Key: aead1b358e37d400e37bd9f6d031fe3a0fab53f6f6e3839b494740b7373658fe" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document": {
+      "title": "The Symphony of Earth",
+      "content": "'"$(cat test/fixtures/files/earth.txt | tr '\n' ' ' | sed 's/"/\\"/g')"'",
+      "metadata": {"category": "story", "tags": ["earth", "life", "harmony"]}
+    }
+  }' | jq '.'
+```
+
 **Retrieve Document:**
 
 ```bash
 curl http://localhost:3000/v1/documents/1 \
-  -H "X-API-Key: $TEST_API_KEY" | jq '.'
+  -H "X-API-Key: aead1b358e37d400e37bd9f6d031fe3a0fab53f6f6e3839b494740b7373658fe" | jq '.'
 ```
 
 **Search Documents:**
 
 ```bash
 curl "http://localhost:3000/v1/search?q=car&page=1&per_page=10" \
-  -H "X-API-Key: $TEST_API_KEY" | jq '.'
+  -H "X-API-Key: aead1b358e37d400e37bd9f6d031fe3a0fab53f6f6e3839b494740b7373658fe" | jq '.'
 ```
 
 **Delete Document:**
 
 ```bash
 curl -X DELETE http://localhost:3000/v1/documents/1 \
-  -H "X-API-Key: $TEST_API_KEY" | jq '.'
+  -H "X-API-Key: aead1b358e37d400e37bd9f6d031fe3a0fab53f6f6e3839b494740b7373658fe" | jq '.'
 ```
 
 ### Test Files Available
@@ -102,10 +117,10 @@ The project includes three test files in `test/fixtures/files/` that you can use
 DDoc Search is designed to handle document storage and search for multiple tenants with the following key features:
 
 - **Multi-tenant Architecture**: Complete data isolation per tenant with subdomain-based routing
-- **Full-text Search**: Powered by Elasticsearch with custom analyzers and highlighting
+- **Full-text Search**: Powered by Weaviate with BM25 keyword search
 - **Asynchronous Processing**: Kafka-based message queue for document indexing operations
 - **High Performance**: Redis caching, circuit breakers, and rate limiting
-- **Scalable Design**: Horizontal scaling support with configurable shards and replicas
+- **Scalable Design**: Horizontal scaling support with Weaviate's distributed architecture
 - **RESTful API**: Clean JSON API with comprehensive error handling
 
 ## Architecture
@@ -115,7 +130,7 @@ DDoc Search is designed to handle document storage and search for multiple tenan
 - **Framework**: Ruby on Rails 8.0.3
 - **Ruby Version**: 3.3.0 (3.4.7 for Docker)
 - **Database**: SQLite3 (development/test), with support for multiple databases in production
-- **Search Engine**: Elasticsearch 8.0
+- **Search Engine**: Weaviate 1.26.1
 - **Cache**: Redis 5.0 with connection pooling
 - **Message Queue**: Kafka (via Karafka 2.4)
 - **Background Jobs**: Sidekiq 7.0
@@ -125,7 +140,7 @@ DDoc Search is designed to handle document storage and search for multiple tenan
 ### Key Components
 
 - **Tenant Middleware**: Request-level tenant identification via API keys
-- **Circuit Breaker**: Prevents cascading failures to Elasticsearch
+- **Circuit Breaker**: Prevents cascading failures to Weaviate
 - **Rate Limiter**: Redis-based sliding window rate limiting per tenant
 - **Document Indexing**: Async Kafka-based indexing with automatic retries
 - **Search Analytics**: Background job processing for usage metrics
@@ -164,7 +179,7 @@ Ensure you have the following installed:
 - Ruby 3.3.0 or higher
 - Bundler 2.x
 - PostgreSQL (if migrating from SQLite)
-- Elasticsearch 8.0+
+- Weaviate 1.26+
 - Redis 5.0+
 - Kafka (Apache Kafka or compatible)
 
@@ -191,8 +206,8 @@ Ensure you have the following installed:
    # Database
    DATABASE_URL=sqlite3:storage/development.sqlite3
 
-   # Elasticsearch
-   ELASTICSEARCH_URL=http://localhost:9200
+   # Weaviate
+   WEAVIATE_URL=http://localhost:8080
 
    # Redis
    REDIS_URL=redis://localhost:6379/0
@@ -213,13 +228,13 @@ Ensure you have the following installed:
    rails db:seed  # Optional: creates sample data
    ```
 
-5. **Configure Elasticsearch**
+5. **Configure Weaviate**
 
-   Ensure Elasticsearch is running, then create the index:
+   Ensure Weaviate is running, then create the schema:
 
    ```bash
    rails console
-   > Document.__elasticsearch__.create_index! force: true
+   > Document.ensure_weaviate_schema!
    ```
 
 6. **Start required services**
@@ -272,7 +287,7 @@ docker build -t ddoc_search .
 docker run -d \
   -p 80:80 \
   -e RAILS_MASTER_KEY=<value from config/master.key> \
-  -e ELASTICSEARCH_URL=http://elasticsearch:9200 \
+  -e WEAVIATE_URL=http://weaviate:8080 \
   -e REDIS_URL=redis://redis:6379/0 \
   -e KAFKA_BROKERS=kafka:9092 \
   --name ddoc_search \
@@ -294,7 +309,7 @@ kamal deploy
 
 ### Application Configuration
 
-- [config/initializers/elasticsearch.rb](config/initializers/elasticsearch.rb) - Elasticsearch client configuration
+- [config/initializers/weaviate.rb](config/initializers/weaviate.rb) - Weaviate client configuration
 - [config/initializers/redis.rb](config/initializers/redis.rb) - Redis connection pool setup
 - [config/initializers/karafka.rb](config/initializers/karafka.rb) - Kafka consumer configuration
 - [config/initializers/sidekiq.rb](config/initializers/sidekiq.rb) - Sidekiq background job configuration
@@ -389,10 +404,10 @@ bundle exec brakeman
 ## Performance Features
 
 - **Caching**: Search results cached for 10 minutes, documents cached for 1 hour
-- **Circuit Breaker**: Automatic fallback to SQL search when Elasticsearch is unavailable
+- **Circuit Breaker**: Automatic fallback to SQL search when Weaviate is unavailable
 - **Rate Limiting**: Configurable per-tenant rate limits with Redis-backed sliding window
 - **Connection Pooling**: Redis connection pooling for efficient resource utilization
-- **Elasticsearch Optimization**: 10 shards, 2 replicas, custom analyzers with snowball stemming
+- **Weaviate BM25 Search**: Efficient keyword-based search with relevance scoring
 
 ## Monitoring
 
@@ -401,7 +416,7 @@ The application includes:
 - Health check endpoints at `/health` and `/up`
 - Search analytics tracking (query, results count, response time)
 - Lograge for structured logging
-- Circuit breaker metrics for Elasticsearch availability
+- Circuit breaker metrics for Weaviate availability
 
 ## License
 

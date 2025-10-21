@@ -1,20 +1,22 @@
 version: '3.8'
 
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: ddoc_elasticsearch
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.26.1
+    container_name: ddoc_weaviate
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - DEFAULT_VECTORIZER_MODULE=none
+      - ENABLE_MODULES=
+      - CLUSTER_HOSTNAME=node1
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "8080:8080"
+      - "50051:50051"
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
+      - weaviate_data:/var/lib/weaviate
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/v1/.well-known/ready"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -61,7 +63,7 @@ services:
       retries: 5
 
 volumes:
-  elasticsearch_data:
+  weaviate_data:
     driver: local
   redis_data:
     driver: local

@@ -27,7 +27,7 @@ class HealthController < ApplicationController
   def check_dependencies
     {
       postgresql: check_postgresql,
-      elasticsearch: check_elasticsearch,
+      weaviate: check_weaviate,
       redis: check_redis,
       kafka: check_kafka
     }
@@ -45,15 +45,15 @@ class HealthController < ApplicationController
     { status: "down", error: e.message }  # Record the error message for debugging purposes.
   end
 
-  # Check Elasticsearch cluster health and response time.
-  def check_elasticsearch
+  # Check Weaviate health and response time.
+  def check_weaviate
     start = Time.current  # Record the current time for latency calculation.
 
-    # Call the Elasticsearch client to retrieve cluster health information.
-    Elasticsearch::Model.client.cluster.health
+    # Call the Weaviate client to retrieve schema information to verify connectivity.
+    WEAVIATE_CLIENT.schema.get
     { status: "up", latency_ms: ((Time.current - start) * 1000).round(2) }  # Successful execution, record latency.
   rescue => e
-    # Handle any errors during Elasticsearch connection or query execution.
+    # Handle any errors during Weaviate connection or query execution.
     { status: "down", error: e.message }  # Record the error message for debugging purposes.
   end
 

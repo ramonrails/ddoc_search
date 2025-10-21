@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# This class represents a job for indexing documents in Elasticsearch.
+# This class represents a job for indexing documents in Weaviate.
 # It takes care of checking document ownership, attempting to index it,
 # and logging various events throughout the process.
 class IndexDocumentJob < ApplicationJob
@@ -25,12 +25,18 @@ class IndexDocumentJob < ApplicationJob
       return
     end
 
+    # Ensure Weaviate schema exists before indexing
+    Document.ensure_weaviate_schema!
+
     # Use a circuit breaker to limit the number of concurrent indexing attempts.
-    CircuitBreaker.call(:elasticsearch) do
-      # Index the document using Elasticsearch's Ruby client. This is
-      # where the actual indexing happens, and it should succeed most
-      # of the time if everything's set up correctly.
-      document.__elasticsearch__.index_document
+    CircuitBreaker.call(:weaviate) do
+      # Index the document using Weaviate's Ruby client.
+      weaviate_object = document.to_weaviate_object
+
+      WEAVIATE_CLIENT.objects.create(
+        class_name: Document.weaviate_class_name,
+        properties: weaviate_object[:properties]
+      )
 
       # Update the document with a timestamp indicating when it was indexed.
       document.update_column(:indexed_at, Time.current)
@@ -42,7 +48,7 @@ class IndexDocumentJob < ApplicationJob
     # If the document doesn't exist in the database, log a warning and skip the indexing attempt.
     Rails.logger.warn("Document #{document_id} not found, skipping indexing")
   rescue => e
-    # Catch any other exceptions that might occur during indexing. This includes errors like network connectivity issues or Elasticsearch client errors.
+    # Catch any other exceptions that might occur during indexing. This includes errors like network connectivity issues or Weaviate client errors.
     Rails.logger.error("Failed to index document #{document_id}: #{e.message}")
 
     # If we've reached the maximum retry count (5 attempts), send a job to the dead-letter queue with the exception details.
@@ -61,3 +67,4 @@ class IndexDocumentJob < ApplicationJob
     self.class.sidekiq_options_hash["retry_count"] || 0
   end
 end
+

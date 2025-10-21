@@ -22,15 +22,15 @@ class SearchController < ApplicationController
     # Records the start time of the search operation for performance monitoring purposes.
     start_time = Time.current
 
-    # Performs the actual search on the documents using the Elasticsearch client.
+    # Performs the actual search on the documents using the Weaviate client.
     results = Document.search_for_tenant(@current_tenant.id, query, page: page, per_page: per_page)
 
     # Calculates the elapsed time since the search began in milliseconds.
     took_ms = ((Time.current - start_time) * 1000).round
 
-    # Handle both Elasticsearch and SQL results
+    # Handle both Weaviate and SQL results
     if results.respond_to?(:total)
-      # Elasticsearch results
+      # Weaviate results
       total = results.total
       documents = results.records
       SearchAnalyticsJob.perform_later(@current_tenant.id, query, total, took_ms)
@@ -66,29 +66,26 @@ class SearchController < ApplicationController
   private
 
   def format_search_result(document, search_results)
-    # Handle both Elasticsearch and SQL results
+    # Handle both Weaviate and SQL results
     if search_results.respond_to?(:response)
-      # Elasticsearch results - with highlighting and scores
-      highlight = search_results.response.dig("hits", "hits")
-                    .find { |h| h["_id"] == document.id.to_s }
-                    &.dig("highlight", "content")
-                    &.first
+      # Weaviate results - with scores
+      weaviate_docs = search_results.response.dig("data", "Get", Document.weaviate_class_name) || []
+      weaviate_doc = weaviate_docs.find { |d| d["title"] == document.title }
 
-      score = search_results.response.dig("hits", "hits")
-                .find { |h| h["_id"] == document.id.to_s }
-                &.dig("_score")
+      score = weaviate_doc&.dig("_additional", "score")
+      # Weaviate doesn't provide highlighting by default, so we'll use truncated content
+      snippet = document.content.truncate(200)
     else
       # SQL fallback - no highlighting or scores
-      highlight = nil
+      snippet = document.content.truncate(200)
       score = nil
     end
 
-    # Formats a search result object with the ID, title, snippet (either highlighted content or truncated original content),
-    # score, and created at time of the matched document.
+    # Formats a search result object with the ID, title, snippet, score, and created at time
     {
       id: document.id,
       title: document.title,
-      snippet: highlight || document.content.truncate(200),
+      snippet: snippet,
       score: score,
       created_at: document.created_at
     }
