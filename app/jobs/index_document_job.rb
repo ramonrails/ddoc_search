@@ -8,8 +8,8 @@ class IndexDocumentJob < ApplicationJob
   # "indexing" which indicates its purpose.
   queue_as :indexing
 
-  # Sidekiq options for this job, configuring retry attempts and dead-letter queue behavior.
-  sidekiq_options retry: 5, dead: false
+  # Configure retry attempts for this job
+  retry_on StandardError, wait: :polynomially_longer, attempts: 5
 
   # Performs the indexing operation on a document. This is the main
   # method where all the logic resides.
@@ -51,20 +51,8 @@ class IndexDocumentJob < ApplicationJob
     # Catch any other exceptions that might occur during indexing. This includes errors like network connectivity issues or Weaviate client errors.
     Rails.logger.error("Failed to index document #{document_id}: #{e.message}")
 
-    # If we've reached the maximum retry count (5 attempts), send a job to the dead-letter queue with the exception details.
-    if sidekiq_retry_count >= 5
-      DeadLetterQueueJob.perform_async("indexing", document_id, tenant_id, e.message)
-    end
-
-    # Re-raise the exception so that Sidekiq can retry the job according to its configuration.
+    # Re-raise the exception so that ActiveJob can retry the job according to its configuration.
     raise
-  end
-
-  private
-
-  # Helper method to retrieve the current retry count for this job.
-  def sidekiq_retry_count
-    self.class.sidekiq_options_hash["retry_count"] || 0
   end
 end
 

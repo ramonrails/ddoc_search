@@ -36,8 +36,8 @@ module DdocSearch
       expires_in: 10.minutes
     }
 
-    # Configure Sidekiq for background jobs
-    config.active_job.queue_adapter = :sidekiq
+    # Configure Solid Queue for background jobs
+    config.active_job.queue_adapter = :solid_queue
 
     # Middleware for multi-tenancy
     # Load middleware explicitly since it's in app/middleware
