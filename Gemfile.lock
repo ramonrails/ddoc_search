@@ -72,6 +72,9 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
+    aerospike (3.0.0)
+      bcrypt (~> 3.1)
+      msgpack (~> 1.0)
     ast (2.4.3)
     base64 (0.3.0)
     bcrypt (3.1.20)
@@ -321,8 +324,6 @@ GEM
       redis-client (>= 0.22.0)
     redis-client (0.26.1)
       connection_pool
-    redis-namespace (1.11.0)
-      redis (>= 4)
     regexp_parser (2.11.3)
     reline (0.6.2)
       io-console (~> 0.5)
@@ -448,6 +449,7 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
+  aerospike (~> 3.0)
   bcrypt (~> 3.1.7)
   bootsnap
   brakeman
@@ -467,7 +469,6 @@ DEPENDENCIES
   rack-attack (~> 6.7)
   rails (~> 8.0.3)
   redis (~> 5.0)
-  redis-namespace (~> 1.11)
   rspec-rails (~> 6.0)
   rubocop-rails-omakase
   sidekiq (~> 7.0)

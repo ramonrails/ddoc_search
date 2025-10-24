@@ -29,12 +29,11 @@ module DdocSearch
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
-    # Configure Redis for caching
-    config.cache_store = :redis_cache_store, {
-      url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"),
+    # Configure Aerospike for caching
+    require_relative "../lib/aerospike_cache_store"
+    config.cache_store = :aerospike_cache_store, {
       namespace: "doc_search",
-      expires_in: 10.minutes,
-      pool_size: 5
+      expires_in: 10.minutes
     }
 
     # Configure Sidekiq for background jobs

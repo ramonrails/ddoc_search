@@ -16,7 +16,7 @@ module CircuitBreaker
     # - volume_threshold: minimum number of calls required before the circuit breaker starts tracking failures
     # - error_threshold: percentage of failed calls that will trigger the circuit breaker
     circuit = Circuitbox.circuit(service_name, {
-      exceptions: [ Faraday::Error, Redis::BaseError, StandardError ],
+      exceptions: [ Faraday::Error, Aerospike::Exceptions::Aerospike, StandardError ],
       timeout_seconds: 5,
       sleep_window: 30,
       volume_threshold: 5,

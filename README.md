@@ -21,7 +21,9 @@ A high-performance, multi-tenant document search API built with Ruby on Rails. T
 3. **Setup database and Weaviate**
 
    ```bash
-   rails db:drop db:create db:migrate
+   rails db:drop 
+   rails db:create 
+   rails db:migrate
    rails runner "Document.ensure_weaviate_schema!"
    ```
 

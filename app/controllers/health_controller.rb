@@ -28,6 +28,7 @@ class HealthController < ApplicationController
     {
       postgresql: check_postgresql,
       weaviate: check_weaviate,
+      aerospike: check_aerospike,
       redis: check_redis,
       kafka: check_kafka
     }
@@ -57,12 +58,25 @@ class HealthController < ApplicationController
     { status: "down", error: e.message }  # Record the error message for debugging purposes.
   end
 
-  # Check Redis service status and response time (ping).
+  # Check Aerospike service status and response time.
+  def check_aerospike
+    start = Time.current  # Record the current time for latency calculation.
+
+    # Test Aerospike connectivity by checking if we can connect
+    test_key = Aerospike::Key.new(AEROSPIKE_NAMESPACE, "health_check", "test")
+    AEROSPIKE_POOL.exists(test_key)
+    { status: "up", latency_ms: ((Time.current - start) * 1000).round(2) }  # Successful execution, record latency.
+  rescue => e
+    # Handle any errors during Aerospike connection or query execution.
+    { status: "down", error: e.message }  # Record the error message for debugging purposes.
+  end
+
+  # Check Redis service status and response time (ping) - used for Sidekiq only.
   def check_redis
     start = Time.current  # Record the current time for latency calculation.
 
     # Send a simple ping command to test Redis connectivity and response time.
-    REDIS_POOL.ping
+    Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0")).ping
     { status: "up", latency_ms: ((Time.current - start) * 1000).round(2) }  # Successful execution, record latency.
   rescue => e
     # Handle any errors during Redis connection or query execution.

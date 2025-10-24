@@ -34,6 +34,23 @@ services:
       timeout: 5s
       retries: 5
 
+  aerospike:
+    image: aerospike/aerospike-server:latest
+    container_name: ddoc_aerospike
+    ports:
+      - "3200:3000"
+      - "3201:3001"
+      - "3202:3002"
+    volumes:
+      - aerospike_data:/opt/aerospike/data
+    environment:
+      - NAMESPACE=ddoc_search
+    healthcheck:
+      test: ["CMD", "/usr/bin/asadm", "-h", "localhost", "-e", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: ddoc_kafka
@@ -66,6 +83,8 @@ volumes:
   weaviate_data:
     driver: local
   redis_data:
+    driver: local
+  aerospike_data:
     driver: local
   kafka_data:
     driver: local

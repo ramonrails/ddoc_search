@@ -17,12 +17,12 @@ gem "bcrypt", "~> 3.1.7"
 
 # Search & Caching
 gem "faraday", "~> 2.0" # For Weaviate HTTP client
-gem "redis", "~> 5.0"
-gem "redis-namespace", "~> 1.11"
+gem "aerospike", "~> 3.0" # Aerospike client for caching and rate limiting
 gem "connection_pool", "~> 2.4"
 
 # Background Jobs
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 7.0" # Sidekiq requires Redis
+gem "redis", "~> 5.0" # Required for Sidekiq only
 gem "karafka", "~> 2.4"
 
 # API & Serialization
