@@ -3,7 +3,7 @@ source "https://rubygems.org"
 ruby "3.3.0"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.0.3"
+gem "rails", "~> 8.1.0"
 # Use SQLite for development/test, PostgreSQL for production
 gem "sqlite3", "~> 2.0"
 gem "pg", "~> 1.5"
